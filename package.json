@@ -1,6 +1,6 @@
 {
   "name": "@sudobility/whisperly_types",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "TypeScript types for Whisperly API - Localization SaaS platform",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -44,11 +44,11 @@
   "author": "Sudobility",
   "license": "MIT",
   "peerDependencies": {
-    "@sudobility/types": "^1.9.36"
+    "@sudobility/types": "^1.9.37"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@sudobility/types": "^1.9.36",
+    "@sudobility/types": "^1.9.37",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
     "eslint": "^9.39.2",
