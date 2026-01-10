@@ -1,6 +1,6 @@
 {
   "name": "@sudobility/whisperly_types",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "type": "module",
   "description": "TypeScript types for Whisperly API - Localization SaaS platform",
   "main": "./dist/index.cjs",
@@ -25,9 +25,9 @@
     "lint:fix": "bunx eslint src/ --fix",
     "format": "bunx prettier --write \"src/**/*.ts\"",
     "format:check": "bunx prettier --check \"src/**/*.ts\"",
-    "test": "bunx vitest run",
-    "test:watch": "bunx vitest",
-    "verify": "bun run typecheck && bun run lint && bun run test && bun run build",
+    "test": "bunx vitest",
+    "test:run": "bunx vitest run",
+    "verify": "bun run typecheck && bun run lint && bun run test:run && bun run build",
     "prepublishOnly": "bun run clean && bun run verify"
   },
   "files": [

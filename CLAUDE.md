@@ -3,6 +3,13 @@
 ## Project Overview
 `@sudobility/whisperly_types` is a TypeScript types library that defines all shared types, interfaces, and schemas for the Whisperly localization SaaS platform. This package is consumed by both the API (whisperly_api) and client packages (whisperly_client, whisperly_lib, whisperly_app).
 
+## Platform Support
+- **Web App**: Yes
+- **React Native**: Yes
+- **Backend (Node.js/Bun)**: Yes
+
+This is a universal types package with dual ESM/CJS output for maximum compatibility.
+
 ## Tech Stack
 - **Runtime**: Bun
 - **Language**: TypeScript 5.9+
@@ -31,8 +38,8 @@ src/
 bun run build        # Build ESM and CJS outputs
 bun run typecheck    # Run TypeScript type checking
 bun run lint         # Run ESLint
-bun run test         # Run tests (single run)
-bun run test:watch   # Run tests in watch mode
+bun run test         # Run tests in watch mode
+bun run test:run     # Run tests once
 bun run verify       # Run typecheck + lint + test + build
 ```
 
