@@ -22,14 +22,11 @@ import type { Optional, BaseResponse } from '@sudobility/types';
 
 export type HttpMethod = 'GET' | 'POST';
 
-export type SubscriptionTier = 'starter' | 'pro' | 'enterprise';
-
 // =============================================================================
 // Entity Types (database models)
 // =============================================================================
 
 export interface User {
-  id: string;
   firebase_uid: string;
   email: string | null;
   display_name: string | null;
@@ -39,7 +36,7 @@ export interface User {
 
 export interface UserSettings {
   id: string | null;
-  user_id: string;
+  firebase_uid: string;
   organization_name: string | null;
   organization_path: string;
   is_default: boolean;
@@ -49,12 +46,27 @@ export interface UserSettings {
 
 export interface Project {
   id: string;
-  user_id: string;
+  entity_id: string;
   project_name: string;
   display_name: string;
   description: string | null;
   instructions: string | null;
   is_active: boolean | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+}
+
+export interface Endpoint {
+  id: string;
+  project_id: string;
+  endpoint_name: string;
+  display_name: string;
+  http_method: HttpMethod;
+  instructions: string | null;
+  default_source_language: string | null;
+  default_target_languages: string[] | null;
+  is_active: boolean | null;
+  ip_allowlist: string[] | null;
   created_at: Date | null;
   updated_at: Date | null;
 }
@@ -69,25 +81,11 @@ export interface Glossary {
   updated_at: Date | null;
 }
 
-export interface Subscription {
-  id: string;
-  user_id: string;
-  tier: SubscriptionTier;
-  revenuecat_entitlement: string;
-  monthly_request_limit: number;
-  hourly_request_limit: number;
-  requests_this_month: number;
-  requests_this_hour: number;
-  month_reset_at: Date | null;
-  hour_reset_at: Date | null;
-  created_at: Date | null;
-  updated_at: Date | null;
-}
-
 export interface UsageRecord {
-  id: string;
-  user_id: string;
+  uuid: string;
+  entity_id: string;
   project_id: string;
+  endpoint_id: string | null;
   timestamp: Date;
   request_count: number;
   string_count: number;
@@ -132,6 +130,28 @@ export interface ProjectUpdateRequest {
   description: Optional<string>;
   instructions: Optional<string>;
   is_active: Optional<boolean>;
+}
+
+// Endpoint requests
+export interface EndpointCreateRequest {
+  endpoint_name: string;
+  display_name: string;
+  http_method: Optional<HttpMethod>;
+  instructions: Optional<string>;
+  default_source_language: Optional<string>;
+  default_target_languages: Optional<string[]>;
+  ip_allowlist: Optional<string[]>;
+}
+
+export interface EndpointUpdateRequest {
+  endpoint_name: Optional<string>;
+  display_name: Optional<string>;
+  http_method: Optional<HttpMethod>;
+  instructions: Optional<string>;
+  default_source_language: Optional<string | null>;
+  default_target_languages: Optional<string[] | null>;
+  is_active: Optional<boolean>;
+  ip_allowlist: Optional<string[] | null>;
 }
 
 // Glossary requests
@@ -238,7 +258,7 @@ export interface AnalyticsResponse {
 // =============================================================================
 
 export interface RateLimitStatus {
-  tier: SubscriptionTier;
+  tier: string;
   monthly_limit: number;
   monthly_used: number;
   monthly_remaining: number;
@@ -294,13 +314,14 @@ export function errorResponse(error: string): BaseResponse<never> {
 
 // Entity list responses
 export type ProjectListResponse = BaseResponse<Project[]>;
+export type EndpointListResponse = BaseResponse<Endpoint[]>;
 export type GlossaryListResponse = BaseResponse<Glossary[]>;
 
 // Single entity responses
 export type ProjectResponse = BaseResponse<Project>;
+export type EndpointResponse = BaseResponse<Endpoint>;
 export type GlossaryResponse = BaseResponse<Glossary>;
 export type UserSettingsResponse = BaseResponse<UserSettings>;
-export type SubscriptionResponse = BaseResponse<Subscription>;
 export type RateLimitResponse = BaseResponse<RateLimitStatus>;
 
 // Analytics response

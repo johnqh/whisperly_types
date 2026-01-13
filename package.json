@@ -1,6 +1,6 @@
 {
   "name": "@sudobility/whisperly_types",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "type": "module",
   "description": "TypeScript types for Whisperly API - Localization SaaS platform",
   "main": "./dist/index.cjs",

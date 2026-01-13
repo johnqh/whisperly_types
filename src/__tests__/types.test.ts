@@ -3,11 +3,14 @@ import type {
   User,
   UserSettings,
   UsageRecord,
+  Endpoint,
   UserCreateRequest,
   UserUpdateRequest,
   UserSettingsUpdateRequest,
   ProjectCreateRequest,
   ProjectUpdateRequest,
+  EndpointCreateRequest,
+  EndpointUpdateRequest,
   GlossaryCreateRequest,
   GlossaryUpdateRequest,
   ProjectQueryParams,
@@ -29,7 +32,6 @@ describe('Entity Types', () => {
   describe('User', () => {
     it('has correct shape with all fields', () => {
       const user: User = {
-        id: 'user-123',
         firebase_uid: 'firebase-abc',
         email: 'test@example.com',
         display_name: 'Test User',
@@ -37,14 +39,12 @@ describe('Entity Types', () => {
         updated_at: new Date(),
       };
 
-      expect(user.id).toBe('user-123');
       expect(user.firebase_uid).toBe('firebase-abc');
       expect(user.email).toBe('test@example.com');
     });
 
     it('allows null for optional fields', () => {
       const user: User = {
-        id: 'user-123',
         firebase_uid: 'firebase-abc',
         email: null,
         display_name: null,
@@ -61,7 +61,7 @@ describe('Entity Types', () => {
     it('has correct shape', () => {
       const settings: UserSettings = {
         id: 'settings-123',
-        user_id: 'user-456',
+        firebase_uid: 'firebase-abc',
         organization_name: 'My Org',
         organization_path: 'my-org',
         is_default: false,
@@ -76,7 +76,7 @@ describe('Entity Types', () => {
     it('allows null for optional fields', () => {
       const settings: UserSettings = {
         id: null,
-        user_id: 'user-456',
+        firebase_uid: 'firebase-abc',
         organization_name: null,
         organization_path: 'default-path',
         is_default: true,
@@ -92,9 +92,10 @@ describe('Entity Types', () => {
   describe('UsageRecord', () => {
     it('has correct shape', () => {
       const record: UsageRecord = {
-        id: 'usage-123',
-        user_id: 'user-456',
+        uuid: 'usage-123',
+        entity_id: 'entity-456',
         project_id: 'proj-789',
+        endpoint_id: 'endpoint-abc',
         timestamp: new Date(),
         request_count: 5,
         string_count: 100,
@@ -109,9 +110,10 @@ describe('Entity Types', () => {
 
     it('captures error information', () => {
       const record: UsageRecord = {
-        id: 'usage-124',
-        user_id: 'user-456',
+        uuid: 'usage-124',
+        entity_id: 'entity-456',
         project_id: 'proj-789',
+        endpoint_id: null,
         timestamp: new Date(),
         request_count: 1,
         string_count: 0,
@@ -122,6 +124,28 @@ describe('Entity Types', () => {
 
       expect(record.success).toBe(false);
       expect(record.error_message).toBe('Rate limit exceeded');
+    });
+  });
+
+  describe('Endpoint', () => {
+    it('has correct shape', () => {
+      const endpoint: Endpoint = {
+        id: 'endpoint-123',
+        project_id: 'proj-456',
+        endpoint_name: 'translate',
+        display_name: 'Translation Endpoint',
+        http_method: 'POST',
+        instructions: 'Translate formally',
+        default_source_language: 'en',
+        default_target_languages: ['ja', 'es'],
+        is_active: true,
+        ip_allowlist: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      expect(endpoint.endpoint_name).toBe('translate');
+      expect(endpoint.http_method).toBe('POST');
     });
   });
 });
@@ -197,6 +221,39 @@ describe('Request Types', () => {
 
       expect(request.display_name).toBe('Updated Name');
       expect(request.is_active).toBe(true);
+    });
+  });
+
+  describe('EndpointCreateRequest', () => {
+    it('has correct shape', () => {
+      const request: EndpointCreateRequest = {
+        endpoint_name: 'translate',
+        display_name: 'Translation Endpoint',
+        http_method: 'POST',
+        instructions: 'Translate formally',
+        default_source_language: 'en',
+        default_target_languages: ['ja', 'es'],
+        ip_allowlist: undefined,
+      };
+
+      expect(request.endpoint_name).toBe('translate');
+    });
+  });
+
+  describe('EndpointUpdateRequest', () => {
+    it('allows partial updates', () => {
+      const request: EndpointUpdateRequest = {
+        display_name: 'Updated Endpoint',
+        endpoint_name: undefined,
+        http_method: undefined,
+        instructions: 'New instructions',
+        default_source_language: undefined,
+        default_target_languages: undefined,
+        is_active: true,
+        ip_allowlist: undefined,
+      };
+
+      expect(request.display_name).toBe('Updated Endpoint');
     });
   });
 
