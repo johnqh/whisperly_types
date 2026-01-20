@@ -17,12 +17,6 @@ export type {
 import type { Optional, BaseResponse } from '@sudobility/types';
 
 // =============================================================================
-// Enum Types
-// =============================================================================
-
-export type HttpMethod = 'GET' | 'POST';
-
-// =============================================================================
 // Entity Types (database models)
 // =============================================================================
 
@@ -51,41 +45,38 @@ export interface Project {
   display_name: string;
   description: string | null;
   instructions: string | null;
-  is_active: boolean | null;
-  created_at: Date | null;
-  updated_at: Date | null;
-}
-
-export interface Endpoint {
-  id: string;
-  project_id: string;
-  endpoint_name: string;
-  display_name: string;
-  http_method: HttpMethod;
-  instructions: string | null;
   default_source_language: string | null;
   default_target_languages: string[] | null;
-  is_active: boolean | null;
   ip_allowlist: string[] | null;
+  is_active: boolean | null;
   created_at: Date | null;
   updated_at: Date | null;
 }
 
-export interface Glossary {
+export interface Dictionary {
   id: string;
+  entity_id: string;
   project_id: string;
-  term: string;
-  translations: Record<string, string>;
-  context: string | null;
   created_at: Date | null;
   updated_at: Date | null;
 }
+
+export interface DictionaryEntry {
+  id: string;
+  dictionary_id: string;
+  language_code: string;
+  text: string;
+  created_at: Date | null;
+  updated_at: Date | null;
+}
+
+/** Flattened dictionary translations: { language_code: text } */
+export type DictionaryTranslations = Record<string, string>;
 
 export interface UsageRecord {
   uuid: string;
   entity_id: string;
   project_id: string;
-  endpoint_id: string | null;
   timestamp: Date;
   request_count: number;
   string_count: number;
@@ -122,6 +113,9 @@ export interface ProjectCreateRequest {
   display_name: string;
   description: Optional<string>;
   instructions: Optional<string>;
+  default_source_language: Optional<string>;
+  default_target_languages: Optional<string[]>;
+  ip_allowlist: Optional<string[]>;
 }
 
 export interface ProjectUpdateRequest {
@@ -129,43 +123,16 @@ export interface ProjectUpdateRequest {
   display_name: Optional<string>;
   description: Optional<string>;
   instructions: Optional<string>;
-  is_active: Optional<boolean>;
-}
-
-// Endpoint requests
-export interface EndpointCreateRequest {
-  endpoint_name: string;
-  display_name: string;
-  http_method: Optional<HttpMethod>;
-  instructions: Optional<string>;
-  default_source_language: Optional<string>;
-  default_target_languages: Optional<string[]>;
-  ip_allowlist: Optional<string[]>;
-}
-
-export interface EndpointUpdateRequest {
-  endpoint_name: Optional<string>;
-  display_name: Optional<string>;
-  http_method: Optional<HttpMethod>;
-  instructions: Optional<string>;
   default_source_language: Optional<string | null>;
   default_target_languages: Optional<string[] | null>;
-  is_active: Optional<boolean>;
   ip_allowlist: Optional<string[] | null>;
+  is_active: Optional<boolean>;
 }
 
-// Glossary requests
-export interface GlossaryCreateRequest {
-  term: string;
-  translations: Record<string, string>;
-  context: Optional<string>;
-}
-
-export interface GlossaryUpdateRequest {
-  term: Optional<string>;
-  translations: Optional<Record<string, string>>;
-  context: Optional<string>;
-}
+// Dictionary requests - direct DictionaryTranslations payload
+// API accepts { "en": "hello", "es": "hola" } directly, not wrapped
+export type DictionaryCreateRequest = DictionaryTranslations;
+export type DictionaryUpdateRequest = DictionaryTranslations;
 
 // =============================================================================
 // Query Parameter Types
@@ -173,10 +140,6 @@ export interface GlossaryUpdateRequest {
 
 export interface ProjectQueryParams {
   is_active: Optional<string>;
-}
-
-export interface GlossaryQueryParams {
-  search: Optional<string>;
 }
 
 export interface UsageAnalyticsQueryParams {
@@ -198,22 +161,31 @@ export interface TranslationRequest {
 
 export interface TranslationResponse {
   translations: Record<string, string[]>;
-  glossaries_used: string[];
+  dictionary_terms_used: string[];
   request_id: string;
 }
 
 // =============================================================================
-// Glossary Callback Types (GET endpoint for translation service)
+// Dictionary Callback Types (GET endpoint for translation service)
 // =============================================================================
 
-export interface GlossaryLookupRequest {
-  glossary: string;
+export interface DictionaryLookupRequest {
+  term: string;
   languages: string;
 }
 
-export interface GlossaryLookupResponse {
-  glossary: string;
+export interface DictionaryLookupResponse {
+  term: string;
   translations: Record<string, string | null>;
+}
+
+// =============================================================================
+// Dictionary Search Response
+// =============================================================================
+
+export interface DictionarySearchResponse {
+  dictionary_id: string;
+  translations: DictionaryTranslations;
 }
 
 // =============================================================================
@@ -278,8 +250,8 @@ export interface RateLimitStatus {
 export interface TranslationServicePayload {
   target_languages: string[];
   strings: string[];
-  glossaries: string[];
-  glossary_callback_url: string;
+  dictionary_terms: string[];
+  dictionary_callback_url: string;
 }
 
 export interface TranslationServiceResponse {
@@ -314,22 +286,22 @@ export function errorResponse(error: string): BaseResponse<never> {
 
 // Entity list responses
 export type ProjectListResponse = BaseResponse<Project[]>;
-export type EndpointListResponse = BaseResponse<Endpoint[]>;
-export type GlossaryListResponse = BaseResponse<Glossary[]>;
 
 // Single entity responses
 export type ProjectResponse = BaseResponse<Project>;
-export type EndpointResponse = BaseResponse<Endpoint>;
-export type GlossaryResponse = BaseResponse<Glossary>;
 export type UserSettingsResponse = BaseResponse<UserSettings>;
 export type RateLimitResponse = BaseResponse<RateLimitStatus>;
+
+// Dictionary responses
+export type DictionaryResponse = BaseResponse<DictionaryTranslations>;
+export type DictionarySearchApiResponse = BaseResponse<DictionarySearchResponse>;
+export type DictionaryLookupApiResponse = BaseResponse<DictionaryLookupResponse>;
 
 // Analytics response
 export type AnalyticsApiResponse = BaseResponse<AnalyticsResponse>;
 
 // Translation responses
 export type TranslationApiResponse = BaseResponse<TranslationResponse>;
-export type GlossaryLookupApiResponse = BaseResponse<GlossaryLookupResponse>;
 
 // Health check response
 export type HealthCheckResponse = BaseResponse<HealthCheckData>;
