@@ -11,12 +11,12 @@ import type {
   ProjectUpdateRequest,
   EndpointCreateRequest,
   EndpointUpdateRequest,
-  GlossaryCreateRequest,
-  GlossaryUpdateRequest,
+  DictionaryCreateRequest,
+  DictionaryUpdateRequest,
+  DictionarySearchResponse,
   ProjectQueryParams,
-  GlossaryQueryParams,
   UsageAnalyticsQueryParams,
-  GlossaryLookupRequest,
+  DictionaryLookupRequest,
   UsageAggregate,
   UsageByProject,
   UsageByDate,
@@ -257,28 +257,43 @@ describe('Request Types', () => {
     });
   });
 
-  describe('GlossaryCreateRequest', () => {
-    it('has correct shape', () => {
-      const request: GlossaryCreateRequest = {
-        term: 'hello',
-        translations: { ja: 'こんにちは', es: 'hola' },
-        context: 'greeting',
+  describe('DictionaryCreateRequest', () => {
+    it('has correct shape (is DictionaryTranslations)', () => {
+      const request: DictionaryCreateRequest = {
+        ja: 'こんにちは',
+        es: 'hola',
       };
 
-      expect(request.term).toBe('hello');
-      expect(request.translations['ja']).toBe('こんにちは');
+      expect(request['ja']).toBe('こんにちは');
+      expect(request['es']).toBe('hola');
     });
   });
 
-  describe('GlossaryUpdateRequest', () => {
-    it('allows partial updates', () => {
-      const request: GlossaryUpdateRequest = {
-        term: undefined,
-        translations: { ja: '今日は' },
-        context: undefined,
+  describe('DictionaryUpdateRequest', () => {
+    it('has correct shape (is DictionaryTranslations)', () => {
+      const request: DictionaryUpdateRequest = {
+        ja: '今日は',
+        de: 'hallo',
       };
 
-      expect(request.translations).toEqual({ ja: '今日は' });
+      expect(request['ja']).toBe('今日は');
+      expect(request['de']).toBe('hallo');
+    });
+  });
+
+  describe('DictionarySearchResponse', () => {
+    it('has correct shape', () => {
+      const response: DictionarySearchResponse = {
+        dictionary_id: 'dict-123',
+        translations: {
+          en: 'hello',
+          ja: 'こんにちは',
+          es: 'hola',
+        },
+      };
+
+      expect(response.dictionary_id).toBe('dict-123');
+      expect(response.translations['ja']).toBe('こんにちは');
     });
   });
 });
@@ -291,16 +306,6 @@ describe('Query Parameter Types', () => {
       };
 
       expect(params.is_active).toBe('true');
-    });
-  });
-
-  describe('GlossaryQueryParams', () => {
-    it('has correct shape', () => {
-      const params: GlossaryQueryParams = {
-        search: 'hello',
-      };
-
-      expect(params.search).toBe('hello');
     });
   });
 
@@ -319,15 +324,15 @@ describe('Query Parameter Types', () => {
   });
 });
 
-describe('Glossary Callback Types', () => {
-  describe('GlossaryLookupRequest', () => {
+describe('Dictionary Callback Types', () => {
+  describe('DictionaryLookupRequest', () => {
     it('has correct shape', () => {
-      const request: GlossaryLookupRequest = {
-        glossary: 'hello',
+      const request: DictionaryLookupRequest = {
+        term: 'hello',
         languages: 'ja,es,fr',
       };
 
-      expect(request.glossary).toBe('hello');
+      expect(request.term).toBe('hello');
       expect(request.languages).toBe('ja,es,fr');
     });
   });
@@ -446,29 +451,44 @@ describe('Rate Limit Types', () => {
 
 describe('Translation Service Types', () => {
   describe('TranslationServicePayload', () => {
-    it('has correct shape', () => {
+    it('has correct shape with required fields', () => {
       const payload: TranslationServicePayload = {
-        target_languages: ['ja', 'es'],
-        strings: ['Hello', 'World'],
-        glossaries: ['greeting', 'common'],
-        glossary_callback_url: 'https://api.example.com/glossary',
+        texts: ['Hello', 'World'],
+        target_language_codes: ['ja', 'es'],
       };
 
-      expect(payload.target_languages).toContain('ja');
-      expect(payload.glossary_callback_url).toContain('glossary');
+      expect(payload.texts).toHaveLength(2);
+      expect(payload.target_language_codes).toContain('ja');
+    });
+
+    it('accepts optional fields', () => {
+      const payload: TranslationServicePayload = {
+        texts: ['Hello'],
+        target_language_codes: ['ja'],
+        context: 'greeting',
+        preserve_formatting: true,
+        source_language_code: 'en',
+      };
+
+      expect(payload.context).toBe('greeting');
+      expect(payload.preserve_formatting).toBe(true);
+      expect(payload.source_language_code).toBe('en');
     });
   });
 
   describe('TranslationServiceResponse', () => {
     it('has correct shape', () => {
       const response: TranslationServiceResponse = {
-        translations: {
-          ja: ['こんにちは', '世界'],
-          es: ['Hola', 'Mundo'],
-        },
+        translations: [
+          ['こんにちは', 'Hola'],  // translations of "Hello" in ja, es
+          ['世界', 'Mundo'],       // translations of "World" in ja, es
+        ],
+        detected_source_language: 'en',
       };
 
-      expect(response.translations['ja']).toHaveLength(2);
+      expect(response.translations).toHaveLength(2);
+      expect(response.translations[0]).toHaveLength(2);
+      expect(response.detected_source_language).toBe('en');
     });
   });
 });

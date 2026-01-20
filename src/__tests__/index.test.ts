@@ -3,11 +3,13 @@ import {
   successResponse,
   errorResponse,
   type Project,
-  type Glossary,
+  type Dictionary,
+  type DictionaryEntry,
+  type DictionaryTranslations,
   type Subscription,
   type TranslationRequest,
   type TranslationResponse,
-  type GlossaryLookupResponse,
+  type DictionaryLookupResponse,
   type SubscriptionTier,
 } from '../index';
 
@@ -52,19 +54,41 @@ describe('whisperly_types', () => {
       expect(project.project_name).toBe('my-project');
     });
 
-    it('Glossary type has correct shape', () => {
-      const glossary: Glossary = {
+    it('Dictionary type has correct shape', () => {
+      const dictionary: Dictionary = {
         id: '123',
-        project_id: '456',
-        term: 'hello',
-        translations: { ja: 'こんにちは', es: 'hola' },
-        context: 'greeting',
+        entity_id: '456',
+        project_id: '789',
         created_at: new Date(),
         updated_at: new Date(),
       };
 
-      expect(glossary.term).toBe('hello');
-      expect(glossary.translations['ja']).toBe('こんにちは');
+      expect(dictionary.id).toBe('123');
+      expect(dictionary.project_id).toBe('789');
+    });
+
+    it('DictionaryEntry type has correct shape', () => {
+      const entry: DictionaryEntry = {
+        id: '123',
+        dictionary_id: '456',
+        language_code: 'ja',
+        text: 'こんにちは',
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      expect(entry.language_code).toBe('ja');
+      expect(entry.text).toBe('こんにちは');
+    });
+
+    it('DictionaryTranslations type has correct shape', () => {
+      const translations: DictionaryTranslations = {
+        ja: 'こんにちは',
+        es: 'hola',
+      };
+
+      expect(translations['ja']).toBe('こんにちは');
+      expect(translations['es']).toBe('hola');
     });
 
     it('Subscription type has correct shape', () => {
@@ -119,9 +143,9 @@ describe('whisperly_types', () => {
       expect(response.glossaries_used).toContain('greeting');
     });
 
-    it('GlossaryLookupResponse type has correct shape', () => {
-      const response: GlossaryLookupResponse = {
-        glossary: 'hello',
+    it('DictionaryLookupResponse type has correct shape', () => {
+      const response: DictionaryLookupResponse = {
+        term: 'hello',
         translations: {
           ja: 'こんにちは',
           es: 'hola',
@@ -129,7 +153,7 @@ describe('whisperly_types', () => {
         },
       };
 
-      expect(response.glossary).toBe('hello');
+      expect(response.term).toBe('hello');
       expect(response.translations['ja']).toBe('こんにちは');
       expect(response.translations['fr']).toBeNull();
     });

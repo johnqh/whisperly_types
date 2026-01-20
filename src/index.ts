@@ -247,15 +247,26 @@ export interface RateLimitStatus {
 // Translation Service Types (internal - for calling external service)
 // =============================================================================
 
+/** Request payload for external translation service */
 export interface TranslationServicePayload {
-  target_languages: string[];
-  strings: string[];
-  dictionary_terms: string[];
-  dictionary_callback_url: string;
+  /** List of text strings to translate */
+  texts: string[];
+  /** List of target language codes (e.g., "es", "fr", "de", "zh", "ja") */
+  target_language_codes: string[];
+  /** Optional context to help with translation */
+  context?: string;
+  /** Whether to preserve formatting like line breaks */
+  preserve_formatting?: boolean;
+  /** Source language code (optional, auto-detected if not provided) */
+  source_language_code?: string;
 }
 
+/** Response from external translation service */
 export interface TranslationServiceResponse {
-  translations: Record<string, string[]>;
+  /** Array of arrays - for each input text, translations in each target language (in same order as target_language_codes) */
+  translations: string[][];
+  /** Detected source language code */
+  detected_source_language?: string;
 }
 
 // =============================================================================
