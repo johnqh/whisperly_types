@@ -226,6 +226,21 @@ export interface AnalyticsResponse {
 }
 
 // =============================================================================
+// Project Languages Types
+// =============================================================================
+
+export interface AvailableLanguage {
+  language_code: string;
+  language: string;
+  flag: string;
+}
+
+export interface ProjectLanguagesResponse {
+  project_id: string;
+  languages: string; // comma-separated: "en,zh,ja"
+}
+
+// =============================================================================
 // Rate Limit Types
 // =============================================================================
 
@@ -313,6 +328,10 @@ export type AnalyticsApiResponse = BaseResponse<AnalyticsResponse>;
 
 // Translation responses
 export type TranslationApiResponse = BaseResponse<TranslationResponse>;
+
+// Project Languages responses
+export type AvailableLanguagesApiResponse = BaseResponse<AvailableLanguage[]>;
+export type ProjectLanguagesApiResponse = BaseResponse<ProjectLanguagesResponse>;
 
 // Health check response
 export type HealthCheckResponse = BaseResponse<HealthCheckData>;
