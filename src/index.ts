@@ -157,6 +157,8 @@ export interface TranslationRequest {
   strings: string[];
   target_languages: string[];
   source_language: Optional<string>;
+  /** Skip dictionary term matching/replacement. Set to true when translating dictionary entries. */
+  skip_dictionaries?: boolean;
 }
 
 export interface TranslationResponse {
