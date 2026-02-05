@@ -48,6 +48,7 @@ export interface Project {
   default_source_language: string | null;
   default_target_languages: string[] | null;
   ip_allowlist: string[] | null;
+  api_key: string | null;
   is_active: boolean | null;
   created_at: Date | null;
   updated_at: Date | null;
@@ -126,6 +127,7 @@ export interface ProjectUpdateRequest {
   default_source_language: Optional<string | null>;
   default_target_languages: Optional<string[] | null>;
   ip_allowlist: Optional<string[] | null>;
+  api_key: Optional<string | null>;
   is_active: Optional<boolean>;
 }
 
