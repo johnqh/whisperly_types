@@ -1,88 +1,121 @@
 # CLAUDE.md - whisperly_types
 
 ## Project Overview
-`@sudobility/whisperly_types` is a TypeScript types library that defines all shared types, interfaces, and schemas for the Whisperly localization SaaS platform. This package is consumed by both the API (whisperly_api) and client packages (whisperly_client, whisperly_lib, whisperly_app).
 
-## Platform Support
-- **Web App**: Yes
-- **React Native**: Yes
-- **Backend (Node.js/Bun)**: Yes
+`@sudobility/whisperly_types` is the shared TypeScript types library for the Whisperly localization SaaS platform. It defines all interfaces, request/response types, and helper functions consumed by all other whisperly packages (whisperly_api, whisperly_client, whisperly_lib, whisperly_app).
 
-This is a universal types package with dual ESM/CJS output for maximum compatibility.
-
-## Tech Stack
-- **Runtime**: Bun
-- **Language**: TypeScript 5.9+
-- **Build**: Dual ESM/CJS output
-- **Testing**: Vitest
-- **Linting**: ESLint 9 with TypeScript support
-- **Formatting**: Prettier
+**Platform**: Universal (Web, React Native, Backend) — dual ESM/CJS output, zero runtime dependencies.
 
 ## Package Manager
-**IMPORTANT**: This project uses **Bun**, not npm or yarn.
-- Install dependencies: `bun install`
-- Run scripts: `bun run <script>`
-- Add dependencies: `bun add <package>` or `bun add -d <package>` for dev
+
+**Bun** (not npm/yarn): `bun install`, `bun run <script>`, `bun add <package>`
 
 ## Project Structure
+
 ```
 src/
-├── index.ts           # Main barrel file with all type exports
+├── index.ts              # All type definitions and helper functions (single file)
 └── __tests__/
-    ├── index.test.ts  # Response helper tests
-    └── types.test.ts  # Type shape validation tests
+    ├── index.test.ts     # Response helper function tests
+    └── types.test.ts     # Type shape validation tests
 ```
 
 ## Key Scripts
+
 ```bash
-bun run build        # Build ESM and CJS outputs
-bun run typecheck    # Run TypeScript type checking
-bun run lint         # Run ESLint
-bun run test         # Run tests in watch mode
+bun run build        # Build ESM + CJS to dist/
+bun run typecheck    # TypeScript type checking
+bun run lint         # ESLint
 bun run test:run     # Run tests once
-bun run verify       # Run typecheck + lint + test + build
+bun run verify       # typecheck + lint + test + build (use before committing)
 ```
 
-## Type Categories
-The package exports types organized into these categories:
+## Type Organization (in index.ts)
 
-1. **Entity Types** (database models): `User`, `UserSettings`, `Project`, `Glossary`, `Subscription`, `UsageRecord`
-2. **Request Types**: `*CreateRequest`, `*UpdateRequest` for each entity
-3. **Query Params**: `ProjectQueryParams`, `GlossaryQueryParams`, `UsageAnalyticsQueryParams`
-4. **Translation Types**: `TranslationRequest`, `TranslationResponse`, `GlossaryLookupRequest/Response`
-5. **Analytics Types**: `UsageAggregate`, `UsageByProject`, `UsageByDate`, `AnalyticsResponse`
-6. **Rate Limit Types**: `RateLimitStatus`, `SubscriptionTier`
-7. **Response Helpers**: `successResponse<T>()`, `errorResponse()`
-8. **Response Type Aliases**: `ProjectResponse`, `GlossaryResponse`, etc.
+All types are in a single file, organized by section:
 
-## Development Guidelines
+### 1. Re-exports from @sudobility/types
+`ApiResponse`, `BaseResponse`, `NetworkClient`, `Optional`, `PaginatedResponse`, `PaginationInfo`, `PaginationOptions`
 
-### Adding New Types
-1. Add types to `src/index.ts` in the appropriate section
-2. Add corresponding tests in `src/__tests__/types.test.ts`
-3. Run `bun run verify` before committing
+### 2. Entity Types (database models)
+| Type | Key Fields | Notes |
+|------|-----------|-------|
+| `User` | firebase_uid, email, display_name | PK is firebase_uid |
+| `UserSettings` | firebase_uid, organization_path | Legacy personal org paths |
+| `Project` | id, entity_id, project_name, display_name, api_key, ip_allowlist | Entity-scoped |
+| `Dictionary` | id, entity_id, project_id | Container for entries |
+| `DictionaryEntry` | id, dictionary_id, language_code, text | Individual translation |
+| `DictionaryTranslations` | `Record<string, string>` | Flattened `{ "en": "hello", "es": "hola" }` |
+| `UsageRecord` | uuid, entity_id, project_id, request_count, character_count | Analytics tracking |
 
-### Type Conventions
+### 3. Request Types
+- `UserCreateRequest`, `UserUpdateRequest`
+- `UserSettingsUpdateRequest`
+- `ProjectCreateRequest`, `ProjectUpdateRequest`
+- `DictionaryCreateRequest`, `DictionaryUpdateRequest` — both are `DictionaryTranslations` (direct `{ lang: text }` payload)
+
+### 4. Query Parameter Types
+- `ProjectQueryParams` — `is_active` filter
+- `UsageAnalyticsQueryParams` — `project_id`, `start_date`, `end_date`, `success` filters
+
+### 5. Translation API Types
+- `TranslationRequest` — `strings[]`, `target_languages[]`, optional `source_language`, `skip_dictionaries`
+- `TranslationResponse` — `translations: Record<lang, string[]>`, `dictionary_terms_used[]`, `request_id`
+
+### 6. Dictionary Callback Types
+- `DictionaryLookupRequest` — `term`, `languages` (for translation service GET callback)
+- `DictionaryLookupResponse` — `term`, `translations: Record<lang, string | null>`
+
+### 7. Dictionary Search
+- `DictionarySearchResponse` — `dictionary_id`, `translations: DictionaryTranslations`
+
+### 8. Analytics Types
+- `UsageAggregate` — totals, success rate, period range
+- `UsageByProject` — per-project breakdown
+- `UsageByDate` — daily breakdown
+- `AnalyticsResponse` — composite of all three
+
+### 9. Project Languages
+- `AvailableLanguage` — `language_code`, `language`, `flag`
+- `ProjectLanguagesResponse` — `project_id`, `languages` (comma-separated string)
+
+### 10. Rate Limit Types
+- `RateLimitStatus` — tier, monthly/hourly limits+used+remaining, resets_at
+
+### 11. Translation Service Types (internal)
+- `TranslationServicePayload` — payload for external translation service
+- `TranslationServiceResponse` — response from external translation service
+
+### 12. Response Helpers
+- `successResponse<T>(data)` → `BaseResponse<T>` with `success: true`
+- `errorResponse(error)` → `BaseResponse<never>` with `success: false`
+
+### 13. Response Type Aliases
+`ProjectListResponse`, `ProjectResponse`, `UserSettingsResponse`, `RateLimitResponse`, `DictionaryResponse`, `DictionarySearchApiResponse`, `DictionaryLookupApiResponse`, `AnalyticsApiResponse`, `TranslationApiResponse`, `AvailableLanguagesApiResponse`, `ProjectLanguagesApiResponse`, `HealthCheckResponse`
+
+## Conventions
+
 - Entity types match database schema exactly
-- Request types use `Optional<T>` for optional fields (re-exported from @sudobility/types)
-- Response types are wrapped with `BaseResponse<T>`
 - All dates are `Date | null` in entities
+- Request types use `Optional<T>` from @sudobility/types for optional fields
+- Update requests make all fields `Optional<T>` (partial updates)
+- Response types are wrapped with `BaseResponse<T>`
+- Response naming: `EntityResponse` (single), `EntityListResponse` (array), `*ApiResponse` (special)
 
-### Testing Types
-Tests validate type shapes at runtime to catch breaking changes:
-```typescript
-const project: Project = {
-  id: '123',
-  user_id: '456',
-  // ... all required fields
-};
-expect(project.id).toBe('123');
-```
+## Adding New Types
+
+1. Add interface to `src/index.ts` in the appropriate section
+2. Add response type alias if used in API (e.g., `type FooResponse = BaseResponse<Foo>`)
+3. Add test cases in `src/__tests__/types.test.ts`
+4. Run `bun run verify`
 
 ## Dependencies
-- `@sudobility/types` - Base types (ApiResponse, BaseResponse, etc.)
+
+- `@sudobility/types` — peer dependency providing `BaseResponse`, `Optional`, etc.
+- Zero runtime dependencies
 
 ## Build Output
-- `dist/index.js` - ESM module
-- `dist/index.cjs` - CommonJS module
-- `dist/index.d.ts` - Type declarations
+
+- `dist/index.js` — ESM module
+- `dist/index.cjs` — CommonJS module
+- `dist/index.d.ts` — TypeScript declarations
