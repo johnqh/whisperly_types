@@ -1,19 +1,19 @@
 import { describe, it, expect } from 'vitest';
+import { successResponse } from '../index';
 import type {
   User,
   UserSettings,
   UsageRecord,
-  Endpoint,
+  Project,
   UserCreateRequest,
   UserUpdateRequest,
   UserSettingsUpdateRequest,
   ProjectCreateRequest,
   ProjectUpdateRequest,
-  EndpointCreateRequest,
-  EndpointUpdateRequest,
   DictionaryCreateRequest,
   DictionaryUpdateRequest,
   DictionarySearchResponse,
+  DictionaryTranslations,
   ProjectQueryParams,
   UsageAnalyticsQueryParams,
   DictionaryLookupRequest,
@@ -22,10 +22,23 @@ import type {
   UsageByDate,
   AnalyticsResponse,
   RateLimitStatus,
+  RateLimitTier,
+  ISODateString,
   TranslationServicePayload,
   TranslationServiceResponse,
   HealthCheckData,
-  HttpMethod,
+  ProjectListResponse,
+  ProjectResponse,
+  UserSettingsResponse,
+  RateLimitResponse,
+  DictionaryResponse,
+  DictionarySearchApiResponse,
+  DictionaryLookupApiResponse,
+  AnalyticsApiResponse,
+  TranslationApiResponse,
+  AvailableLanguagesApiResponse,
+  ProjectLanguagesApiResponse,
+  HealthCheckResponse,
 } from '../index';
 
 describe('Entity Types', () => {
@@ -95,7 +108,6 @@ describe('Entity Types', () => {
         uuid: 'usage-123',
         entity_id: 'entity-456',
         project_id: 'proj-789',
-        endpoint_id: 'endpoint-abc',
         timestamp: new Date(),
         request_count: 5,
         string_count: 100,
@@ -113,7 +125,6 @@ describe('Entity Types', () => {
         uuid: 'usage-124',
         entity_id: 'entity-456',
         project_id: 'proj-789',
-        endpoint_id: null,
         timestamp: new Date(),
         request_count: 1,
         string_count: 0,
@@ -127,25 +138,26 @@ describe('Entity Types', () => {
     });
   });
 
-  describe('Endpoint', () => {
+  describe('Project', () => {
     it('has correct shape', () => {
-      const endpoint: Endpoint = {
-        id: 'endpoint-123',
-        project_id: 'proj-456',
-        endpoint_name: 'translate',
-        display_name: 'Translation Endpoint',
-        http_method: 'POST',
+      const project: Project = {
+        id: 'project-123',
+        entity_id: 'entity-456',
+        project_name: 'translate',
+        display_name: 'Translation Project',
+        description: 'A translation project',
         instructions: 'Translate formally',
         default_source_language: 'en',
         default_target_languages: ['ja', 'es'],
-        is_active: true,
         ip_allowlist: null,
+        api_key: 'ak_test_123',
+        is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
       };
 
-      expect(endpoint.endpoint_name).toBe('translate');
-      expect(endpoint.http_method).toBe('POST');
+      expect(project.project_name).toBe('translate');
+      expect(project.entity_id).toBe('entity-456');
     });
   });
 });
@@ -224,47 +236,14 @@ describe('Request Types', () => {
     });
   });
 
-  describe('EndpointCreateRequest', () => {
-    it('has correct shape', () => {
-      const request: EndpointCreateRequest = {
-        endpoint_name: 'translate',
-        display_name: 'Translation Endpoint',
-        http_method: 'POST',
-        instructions: 'Translate formally',
-        default_source_language: 'en',
-        default_target_languages: ['ja', 'es'],
-        ip_allowlist: undefined,
-      };
-
-      expect(request.endpoint_name).toBe('translate');
-    });
-  });
-
-  describe('EndpointUpdateRequest', () => {
-    it('allows partial updates', () => {
-      const request: EndpointUpdateRequest = {
-        display_name: 'Updated Endpoint',
-        endpoint_name: undefined,
-        http_method: undefined,
-        instructions: 'New instructions',
-        default_source_language: undefined,
-        default_target_languages: undefined,
-        is_active: true,
-        ip_allowlist: undefined,
-      };
-
-      expect(request.display_name).toBe('Updated Endpoint');
-    });
-  });
-
   describe('DictionaryCreateRequest', () => {
     it('has correct shape (is DictionaryTranslations)', () => {
       const request: DictionaryCreateRequest = {
-        ja: 'こんにちは',
+        ja: '\u3053\u3093\u306b\u3061\u306f',
         es: 'hola',
       };
 
-      expect(request['ja']).toBe('こんにちは');
+      expect(request['ja']).toBe('\u3053\u3093\u306b\u3061\u306f');
       expect(request['es']).toBe('hola');
     });
   });
@@ -272,11 +251,11 @@ describe('Request Types', () => {
   describe('DictionaryUpdateRequest', () => {
     it('has correct shape (is DictionaryTranslations)', () => {
       const request: DictionaryUpdateRequest = {
-        ja: '今日は',
+        ja: '\u4eca\u65e5\u306f',
         de: 'hallo',
       };
 
-      expect(request['ja']).toBe('今日は');
+      expect(request['ja']).toBe('\u4eca\u65e5\u306f');
       expect(request['de']).toBe('hallo');
     });
   });
@@ -287,13 +266,13 @@ describe('Request Types', () => {
         dictionary_id: 'dict-123',
         translations: {
           en: 'hello',
-          ja: 'こんにちは',
+          ja: '\u3053\u3093\u306b\u3061\u306f',
           es: 'hola',
         },
       };
 
       expect(response.dictionary_id).toBe('dict-123');
-      expect(response.translations['ja']).toBe('こんにちは');
+      expect(response.translations['ja']).toBe('\u3053\u3093\u306b\u3061\u306f');
     });
   });
 });
@@ -446,6 +425,117 @@ describe('Rate Limit Types', () => {
       expect(status.tier).toBe('pro');
       expect(status.monthly_remaining).toBe(40000);
     });
+
+    it('handles zero remaining values', () => {
+      const status: RateLimitStatus = {
+        tier: 'free',
+        monthly_limit: 1000,
+        monthly_used: 1000,
+        monthly_remaining: 0,
+        hourly_limit: 100,
+        hourly_used: 100,
+        hourly_remaining: 0,
+        resets_at: {
+          monthly: '2024-02-01T00:00:00Z',
+          hourly: '2024-01-15T15:00:00Z',
+        },
+      };
+
+      expect(status.monthly_remaining).toBe(0);
+      expect(status.hourly_remaining).toBe(0);
+      expect(status.monthly_used).toBe(status.monthly_limit);
+      expect(status.hourly_used).toBe(status.hourly_limit);
+    });
+  });
+
+  describe('RateLimitTier', () => {
+    it('accepts all valid tier values', () => {
+      const tiers: RateLimitTier[] = ['free', 'starter', 'pro', 'enterprise'];
+      expect(tiers).toHaveLength(4);
+      expect(tiers).toContain('free');
+      expect(tiers).toContain('enterprise');
+    });
+  });
+});
+
+describe('ISODateString', () => {
+  it('is assignable from regular strings', () => {
+    const dateStr: ISODateString = '2024-01-15T12:00:00.000Z';
+    expect(dateStr).toBe('2024-01-15T12:00:00.000Z');
+  });
+
+  it('works in UsageAggregate period fields', () => {
+    const aggregate: UsageAggregate = {
+      total_requests: 10,
+      total_strings: 100,
+      total_characters: 500,
+      successful_requests: 10,
+      failed_requests: 0,
+      success_rate: 1.0,
+      period_start: '2024-01-01',
+      period_end: '2024-01-31',
+    };
+
+    expect(aggregate.period_start).toBe('2024-01-01');
+    expect(aggregate.period_end).toBe('2024-01-31');
+  });
+
+  it('works in UsageByDate date field', () => {
+    const entry: UsageByDate = {
+      date: '2024-06-15',
+      request_count: 5,
+      string_count: 50,
+      character_count: 250,
+    };
+
+    expect(entry.date).toBe('2024-06-15');
+  });
+
+  it('works in RateLimitStatus resets_at fields', () => {
+    const status: RateLimitStatus = {
+      tier: 'pro',
+      monthly_limit: 50000,
+      monthly_used: 0,
+      monthly_remaining: 50000,
+      hourly_limit: 2000,
+      hourly_used: 0,
+      hourly_remaining: 2000,
+      resets_at: {
+        monthly: '2024-02-01T00:00:00Z',
+        hourly: '2024-01-15T16:00:00Z',
+      },
+    };
+
+    expect(status.resets_at.monthly).toBe('2024-02-01T00:00:00Z');
+    expect(status.resets_at.hourly).toBe('2024-01-15T16:00:00Z');
+  });
+});
+
+describe('DictionaryTranslations edge cases', () => {
+  it('handles empty translations object', () => {
+    const translations: DictionaryTranslations = {};
+    expect(Object.keys(translations)).toHaveLength(0);
+  });
+
+  it('handles single language translation', () => {
+    const translations: DictionaryTranslations = {
+      en: 'hello',
+    };
+    expect(Object.keys(translations)).toHaveLength(1);
+    expect(translations['en']).toBe('hello');
+  });
+
+  it('handles many languages', () => {
+    const translations: DictionaryTranslations = {
+      en: 'hello',
+      es: 'hola',
+      fr: 'bonjour',
+      de: 'hallo',
+      ja: '\u3053\u3093\u306b\u3061\u306f',
+      zh: '\u4f60\u597d',
+      ko: '\uc548\ub155\ud558\uc138\uc694',
+    };
+    expect(Object.keys(translations)).toHaveLength(7);
   });
 });
 
@@ -480,8 +570,8 @@ describe('Translation Service Types', () => {
     it('has correct shape', () => {
       const response: TranslationServiceResponse = {
         translations: [
-          ['こんにちは', 'Hola'],  // translations of "Hello" in ja, es
-          ['世界', 'Mundo'],       // translations of "World" in ja, es
+          ['\u3053\u3093\u306b\u3061\u306f', 'Hola'], // translations of "Hello" in ja, es
+          ['\u4e16\u754c', 'Mundo'], // translations of "World" in ja, es
         ],
         detected_source_language: 'en',
       };
@@ -508,12 +598,179 @@ describe('Health Check Types', () => {
   });
 });
 
-describe('Enum Types', () => {
-  describe('HttpMethod', () => {
-    it('accepts valid methods', () => {
-      const getMethods: HttpMethod[] = ['GET', 'POST'];
-      expect(getMethods).toContain('GET');
-      expect(getMethods).toContain('POST');
+describe('Response Type Aliases', () => {
+  it('ProjectListResponse composes correctly with BaseResponse', () => {
+    const response: ProjectListResponse = successResponse<Project[]>([
+      {
+        id: 'proj-1',
+        entity_id: 'entity-1',
+        project_name: 'test-project',
+        display_name: 'Test Project',
+        description: null,
+        instructions: null,
+        default_source_language: null,
+        default_target_languages: null,
+        ip_allowlist: null,
+        api_key: null,
+        is_active: true,
+        created_at: null,
+        updated_at: null,
+      },
+    ]);
+
+    expect(response.success).toBe(true);
+    expect(response.data).toHaveLength(1);
+    expect(response.data![0].project_name).toBe('test-project');
+  });
+
+  it('ProjectResponse composes correctly with BaseResponse', () => {
+    const response: ProjectResponse = successResponse<Project>({
+      id: 'proj-1',
+      entity_id: 'entity-1',
+      project_name: 'test-project',
+      display_name: 'Test Project',
+      description: null,
+      instructions: null,
+      default_source_language: null,
+      default_target_languages: null,
+      ip_allowlist: null,
+      api_key: null,
+      is_active: true,
+      created_at: null,
+      updated_at: null,
     });
+
+    expect(response.success).toBe(true);
+    expect(response.data!.id).toBe('proj-1');
+  });
+
+  it('UserSettingsResponse composes correctly with BaseResponse', () => {
+    const response: UserSettingsResponse = successResponse({
+      id: 'settings-1',
+      firebase_uid: 'uid-1',
+      organization_name: 'My Org',
+      organization_path: 'my-org',
+      is_default: true,
+      created_at: null,
+      updated_at: null,
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data!.firebase_uid).toBe('uid-1');
+  });
+
+  it('RateLimitResponse composes correctly with BaseResponse', () => {
+    const response: RateLimitResponse = successResponse<RateLimitStatus>({
+      tier: 'pro',
+      monthly_limit: 50000,
+      monthly_used: 1000,
+      monthly_remaining: 49000,
+      hourly_limit: 2000,
+      hourly_used: 50,
+      hourly_remaining: 1950,
+      resets_at: {
+        monthly: '2024-02-01T00:00:00Z',
+        hourly: '2024-01-15T15:00:00Z',
+      },
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data!.tier).toBe('pro');
+  });
+
+  it('DictionaryResponse composes correctly with BaseResponse', () => {
+    const response: DictionaryResponse = successResponse<DictionaryTranslations>(
+      {
+        en: 'hello',
+        es: 'hola',
+      },
+    );
+
+    expect(response.success).toBe(true);
+    expect(response.data!['en']).toBe('hello');
+  });
+
+  it('DictionarySearchApiResponse composes correctly with BaseResponse', () => {
+    const response: DictionarySearchApiResponse = successResponse({
+      dictionary_id: 'dict-1',
+      translations: { en: 'hello', es: 'hola' },
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data!.dictionary_id).toBe('dict-1');
+  });
+
+  it('DictionaryLookupApiResponse composes correctly with BaseResponse', () => {
+    const response: DictionaryLookupApiResponse = successResponse({
+      term: 'hello',
+      translations: { en: 'hello', fr: null },
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data!.term).toBe('hello');
+    expect(response.data!.translations['fr']).toBeNull();
+  });
+
+  it('AnalyticsApiResponse composes correctly with BaseResponse', () => {
+    const response: AnalyticsApiResponse = successResponse({
+      aggregate: {
+        total_requests: 100,
+        total_strings: 500,
+        total_characters: 2500,
+        successful_requests: 95,
+        failed_requests: 5,
+        success_rate: 0.95,
+        period_start: '2024-01-01',
+        period_end: '2024-01-31',
+      },
+      by_project: [],
+      by_date: [],
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data!.aggregate.total_requests).toBe(100);
+    expect(response.data!.by_project).toHaveLength(0);
+  });
+
+  it('TranslationApiResponse composes correctly with BaseResponse', () => {
+    const response: TranslationApiResponse = successResponse({
+      translations: { ja: ['hello translated'] },
+      dictionary_terms_used: [],
+      request_id: 'req-1',
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data!.request_id).toBe('req-1');
+  });
+
+  it('AvailableLanguagesApiResponse composes correctly with BaseResponse', () => {
+    const response: AvailableLanguagesApiResponse = successResponse([
+      { language_code: 'en', language: 'English', flag: '\uD83C\uDDFA\uD83C\uDDF8' },
+      { language_code: 'ja', language: 'Japanese', flag: '\uD83C\uDDEF\uD83C\uDDF5' },
+    ]);
+
+    expect(response.success).toBe(true);
+    expect(response.data).toHaveLength(2);
+  });
+
+  it('ProjectLanguagesApiResponse composes correctly with BaseResponse', () => {
+    const response: ProjectLanguagesApiResponse = successResponse({
+      project_id: 'proj-1',
+      languages: 'en,ja,es',
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data!.languages).toBe('en,ja,es');
+  });
+
+  it('HealthCheckResponse composes correctly with BaseResponse', () => {
+    const response: HealthCheckResponse = successResponse({
+      name: 'whisperly-api',
+      version: '1.0.0',
+      status: 'healthy',
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data!.status).toBe('healthy');
   });
 });
