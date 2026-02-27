@@ -35,3 +35,6 @@ Thumbs.db
 *.temp
 
 # We commit bun.lock for CI (workflow auto-detects bun vs npm)
+
+# Claude Code local settings
+.claude/settings.local.json
