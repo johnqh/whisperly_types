@@ -569,15 +569,16 @@ describe('Translation Service Types', () => {
   describe('TranslationServiceResponse', () => {
     it('has correct shape', () => {
       const response: TranslationServiceResponse = {
-        translations: [
-          ['\u3053\u3093\u306b\u3061\u306f', 'Hola'], // translations of "Hello" in ja, es
-          ['\u4e16\u754c', 'Mundo'], // translations of "World" in ja, es
-        ],
+        translations: {
+          ja: ['\u3053\u3093\u306b\u3061\u306f', '\u4e16\u754c'], // "Hello", "World" in Japanese
+          es: ['Hola', 'Mundo'], // "Hello", "World" in Spanish
+        },
         detected_source_language: 'en',
       };
 
-      expect(response.translations).toHaveLength(2);
-      expect(response.translations[0]).toHaveLength(2);
+      expect(Object.keys(response.translations)).toHaveLength(2);
+      expect(response.translations['ja']).toHaveLength(2);
+      expect(response.translations['es']).toHaveLength(2);
       expect(response.detected_source_language).toBe('en');
     });
   });

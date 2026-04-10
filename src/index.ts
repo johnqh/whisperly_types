@@ -600,8 +600,8 @@ export interface TranslationServicePayload {
 
 /** Response from external translation service */
 export interface TranslationServiceResponse {
-  /** Array of arrays - for each input text, translations in each target language (in same order as target_language_codes) */
-  translations: string[][];
+  /** Map from target language code to array of translated strings (one per input text) */
+  translations: Record<string, string[]>;
   /** Detected source language code */
   detected_source_language?: string;
 }
