@@ -160,12 +160,7 @@ describe('whisperly_types', () => {
     });
 
     it('RateLimitTier union type is correct', () => {
-      const tiers: RateLimitTier[] = [
-        'free',
-        'starter',
-        'pro',
-        'enterprise',
-      ];
+      const tiers: RateLimitTier[] = ['free', 'starter', 'pro', 'enterprise'];
       expect(tiers).toContain('free');
       expect(tiers).toContain('starter');
       expect(tiers).toContain('pro');
@@ -208,7 +203,9 @@ describe('whisperly_types', () => {
       };
 
       expect(response.term).toBe('hello');
-      expect(response.translations['ja']).toBe('\u3053\u3093\u306b\u3061\u306f');
+      expect(response.translations['ja']).toBe(
+        '\u3053\u3093\u306b\u3061\u306f'
+      );
       expect(response.translations['fr']).toBeNull();
     });
   });

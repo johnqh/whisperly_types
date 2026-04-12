@@ -21,8 +21,11 @@ import type {
   UsageByProject,
   UsageByDate,
   AnalyticsResponse,
-  RateLimitStatus,
+  RateLimitsConfigData,
   RateLimitTier,
+  RateLimitHistoryData,
+  RateLimitsConfigResponse,
+  RateLimitHistoryResponse,
   ISODateString,
   TranslationServicePayload,
   TranslationServiceResponse,
@@ -30,7 +33,6 @@ import type {
   ProjectListResponse,
   ProjectResponse,
   UserSettingsResponse,
-  RateLimitResponse,
   DictionaryResponse,
   DictionarySearchApiResponse,
   DictionaryLookupApiResponse,
@@ -40,6 +42,7 @@ import type {
   ProjectLanguagesApiResponse,
   HealthCheckResponse,
 } from '../index';
+import { RateLimitPeriodType } from '../index';
 
 describe('Entity Types', () => {
   describe('User', () => {
@@ -272,7 +275,9 @@ describe('Request Types', () => {
       };
 
       expect(response.dictionary_id).toBe('dict-123');
-      expect(response.translations['ja']).toBe('\u3053\u3093\u306b\u3061\u306f');
+      expect(response.translations['ja']).toBe(
+        '\u3053\u3093\u306b\u3061\u306f'
+      );
     });
   });
 });
@@ -406,54 +411,87 @@ describe('Analytics Types', () => {
 });
 
 describe('Rate Limit Types', () => {
-  describe('RateLimitStatus', () => {
+  describe('RateLimitsConfigData', () => {
     it('has correct shape', () => {
-      const status: RateLimitStatus = {
-        tier: 'pro',
-        monthly_limit: 50000,
-        monthly_used: 10000,
-        monthly_remaining: 40000,
-        hourly_limit: 2000,
-        hourly_used: 100,
-        hourly_remaining: 1900,
-        resets_at: {
-          monthly: '2024-02-01T00:00:00Z',
-          hourly: '2024-01-15T15:00:00Z',
-        },
+      const config: RateLimitsConfigData = {
+        tiers: [
+          {
+            entitlement: 'none',
+            displayName: 'Free',
+            limits: { hourly: 10, daily: 50, monthly: 200 },
+          },
+          {
+            entitlement: 'pro',
+            displayName: 'Pro',
+            limits: { hourly: 500, daily: 5000, monthly: 50000 },
+          },
+        ],
+        currentEntitlement: 'pro',
+        currentLimits: { hourly: 500, daily: 5000, monthly: 50000 },
+        currentUsage: { hourly: 100, daily: 1000, monthly: 10000 },
       };
 
-      expect(status.tier).toBe('pro');
-      expect(status.monthly_remaining).toBe(40000);
+      expect(config.currentEntitlement).toBe('pro');
+      expect(config.tiers).toHaveLength(2);
+      expect(config.currentUsage.monthly).toBe(10000);
     });
 
-    it('handles zero remaining values', () => {
-      const status: RateLimitStatus = {
-        tier: 'free',
-        monthly_limit: 1000,
-        monthly_used: 1000,
-        monthly_remaining: 0,
-        hourly_limit: 100,
-        hourly_used: 100,
-        hourly_remaining: 0,
-        resets_at: {
-          monthly: '2024-02-01T00:00:00Z',
+    it('supports optional resets field', () => {
+      const config: RateLimitsConfigData = {
+        tiers: [],
+        currentEntitlement: 'none',
+        currentLimits: { hourly: 10, daily: 50, monthly: 200 },
+        currentUsage: { hourly: 0, daily: 0, monthly: 0 },
+        resets: {
           hourly: '2024-01-15T15:00:00Z',
+          daily: '2024-01-16T00:00:00Z',
+          monthly: '2024-02-01T00:00:00Z',
         },
       };
 
-      expect(status.monthly_remaining).toBe(0);
-      expect(status.hourly_remaining).toBe(0);
-      expect(status.monthly_used).toBe(status.monthly_limit);
-      expect(status.hourly_used).toBe(status.hourly_limit);
+      expect(config.resets?.monthly).toBe('2024-02-01T00:00:00Z');
+    });
+  });
+
+  describe('RateLimitHistoryData', () => {
+    it('has correct shape', () => {
+      const history: RateLimitHistoryData = {
+        periodType: RateLimitPeriodType.DAY,
+        entries: [
+          {
+            periodStart: '2024-01-15T00:00:00Z',
+            periodEnd: '2024-01-16T00:00:00Z',
+            requestCount: 42,
+            limit: 50,
+          },
+        ],
+        totalEntries: 1,
+      };
+
+      expect(history.periodType).toBe('day');
+      expect(history.entries).toHaveLength(1);
+      expect(history.entries[0].requestCount).toBe(42);
     });
   });
 
   describe('RateLimitTier', () => {
-    it('accepts all valid tier values', () => {
-      const tiers: RateLimitTier[] = ['free', 'starter', 'pro', 'enterprise'];
-      expect(tiers).toHaveLength(4);
-      expect(tiers).toContain('free');
-      expect(tiers).toContain('enterprise');
+    it('has correct shape', () => {
+      const tier: RateLimitTier = {
+        entitlement: 'pro',
+        displayName: 'Pro',
+        limits: { hourly: 500, daily: 5000, monthly: 50000 },
+      };
+
+      expect(tier.entitlement).toBe('pro');
+      expect(tier.limits.monthly).toBe(50000);
+    });
+  });
+
+  describe('RateLimitPeriodType', () => {
+    it('has all expected values', () => {
+      expect(RateLimitPeriodType.HOUR).toBe('hour');
+      expect(RateLimitPeriodType.DAY).toBe('day');
+      expect(RateLimitPeriodType.MONTH).toBe('month');
     });
   });
 });
@@ -491,23 +529,21 @@ describe('ISODateString', () => {
     expect(entry.date).toBe('2024-06-15');
   });
 
-  it('works in RateLimitStatus resets_at fields', () => {
-    const status: RateLimitStatus = {
-      tier: 'pro',
-      monthly_limit: 50000,
-      monthly_used: 0,
-      monthly_remaining: 50000,
-      hourly_limit: 2000,
-      hourly_used: 0,
-      hourly_remaining: 2000,
-      resets_at: {
-        monthly: '2024-02-01T00:00:00Z',
+  it('works in RateLimitsConfigData resets fields', () => {
+    const config: RateLimitsConfigData = {
+      tiers: [],
+      currentEntitlement: 'pro',
+      currentLimits: { hourly: 500, daily: 5000, monthly: 50000 },
+      currentUsage: { hourly: 0, daily: 0, monthly: 0 },
+      resets: {
         hourly: '2024-01-15T16:00:00Z',
+        daily: '2024-01-16T00:00:00Z',
+        monthly: '2024-02-01T00:00:00Z',
       },
     };
 
-    expect(status.resets_at.monthly).toBe('2024-02-01T00:00:00Z');
-    expect(status.resets_at.hourly).toBe('2024-01-15T16:00:00Z');
+    expect(config.resets?.monthly).toBe('2024-02-01T00:00:00Z');
+    expect(config.resets?.hourly).toBe('2024-01-15T16:00:00Z');
   });
 });
 
@@ -660,32 +696,50 @@ describe('Response Type Aliases', () => {
     expect(response.data!.firebase_uid).toBe('uid-1');
   });
 
-  it('RateLimitResponse composes correctly with BaseResponse', () => {
-    const response: RateLimitResponse = successResponse<RateLimitStatus>({
-      tier: 'pro',
-      monthly_limit: 50000,
-      monthly_used: 1000,
-      monthly_remaining: 49000,
-      hourly_limit: 2000,
-      hourly_used: 50,
-      hourly_remaining: 1950,
-      resets_at: {
-        monthly: '2024-02-01T00:00:00Z',
-        hourly: '2024-01-15T15:00:00Z',
-      },
-    });
+  it('RateLimitsConfigResponse composes correctly with BaseResponse', () => {
+    const response: RateLimitsConfigResponse =
+      successResponse<RateLimitsConfigData>({
+        tiers: [
+          {
+            entitlement: 'pro',
+            displayName: 'Pro',
+            limits: { hourly: 500, daily: 5000, monthly: 50000 },
+          },
+        ],
+        currentEntitlement: 'pro',
+        currentLimits: { hourly: 500, daily: 5000, monthly: 50000 },
+        currentUsage: { hourly: 50, daily: 1000, monthly: 10000 },
+      });
 
     expect(response.success).toBe(true);
-    expect(response.data!.tier).toBe('pro');
+    expect(response.data!.currentEntitlement).toBe('pro');
+  });
+
+  it('RateLimitHistoryResponse composes correctly with BaseResponse', () => {
+    const response: RateLimitHistoryResponse =
+      successResponse<RateLimitHistoryData>({
+        periodType: RateLimitPeriodType.DAY,
+        entries: [
+          {
+            periodStart: '2024-01-15T00:00:00Z',
+            periodEnd: '2024-01-16T00:00:00Z',
+            requestCount: 42,
+            limit: 50,
+          },
+        ],
+        totalEntries: 1,
+      });
+
+    expect(response.success).toBe(true);
+    expect(response.data!.entries).toHaveLength(1);
   });
 
   it('DictionaryResponse composes correctly with BaseResponse', () => {
-    const response: DictionaryResponse = successResponse<DictionaryTranslations>(
-      {
+    const response: DictionaryResponse =
+      successResponse<DictionaryTranslations>({
         en: 'hello',
         es: 'hola',
-      },
-    );
+      });
 
     expect(response.success).toBe(true);
     expect(response.data!['en']).toBe('hello');
@@ -746,8 +800,16 @@ describe('Response Type Aliases', () => {
 
   it('AvailableLanguagesApiResponse composes correctly with BaseResponse', () => {
     const response: AvailableLanguagesApiResponse = successResponse([
-      { language_code: 'en', language: 'English', flag: '\uD83C\uDDFA\uD83C\uDDF8' },
-      { language_code: 'ja', language: 'Japanese', flag: '\uD83C\uDDEF\uD83C\uDDF5' },
+      {
+        language_code: 'en',
+        language: 'English',
+        flag: '\uD83C\uDDFA\uD83C\uDDF8',
+      },
+      {
+        language_code: 'ja',
+        language: 'Japanese',
+        flag: '\uD83C\uDDEF\uD83C\uDDF5',
+      },
     ]);
 
     expect(response.success).toBe(true);

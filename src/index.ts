@@ -12,7 +12,19 @@ export type {
   PaginatedResponse,
   PaginationInfo,
   PaginationOptions,
+  // Rate limit types (canonical definitions in @sudobility/types)
+  RateLimits,
+  RateLimitTier,
+  RateLimitResets,
+  RateLimitsConfigData,
+  RateLimitUsage,
+  RateLimitsConfigResponse,
+  RateLimitHistoryEntry,
+  RateLimitHistoryData,
+  RateLimitHistoryResponse,
 } from '@sudobility/types';
+
+export { RateLimitPeriodType } from '@sudobility/types';
 
 import type { Optional, BaseResponse } from '@sudobility/types';
 
@@ -30,20 +42,6 @@ import type { Optional, BaseResponse } from '@sudobility/types';
  * It serves as documentation to indicate that the value should conform to ISO 8601.
  */
 export type ISODateString = string;
-
-// =============================================================================
-// Rate Limit Tier Type
-// =============================================================================
-
-/**
- * Subscription tier levels that determine rate limits and feature access.
- *
- * - `"free"` - Free tier with basic limits
- * - `"starter"` - Starter tier with increased limits
- * - `"pro"` - Professional tier with high limits
- * - `"enterprise"` - Enterprise tier with custom limits
- */
-export type RateLimitTier = 'free' | 'starter' | 'pro' | 'enterprise';
 
 // =============================================================================
 // Entity Types (database models)
@@ -308,8 +306,6 @@ export interface ProjectUpdateRequest {
   default_target_languages: Optional<string[] | null>;
   /** Updated IP allowlist. Pass `null` to remove restrictions. */
   ip_allowlist: Optional<string[] | null>;
-  /** Updated API key. Pass `null` to revoke. */
-  api_key: Optional<string | null>;
   /** Whether the project should be active. */
   is_active: Optional<boolean>;
 }
@@ -448,6 +444,19 @@ export interface DictionarySearchResponse {
   translations: DictionaryTranslations;
 }
 
+/**
+ * A single item in the dictionary list response.
+ *
+ * Extends {@link DictionarySearchResponse} with timestamp fields from the database.
+ * Returned by the GET dictionary list endpoint.
+ */
+export interface DictionaryListItem extends DictionarySearchResponse {
+  /** Timestamp when the dictionary was created. Null if not yet persisted. */
+  created_at: Date | null;
+  /** Timestamp when the dictionary was last updated. Null if never updated. */
+  updated_at: Date | null;
+}
+
 // =============================================================================
 // Analytics Types
 // =============================================================================
@@ -547,40 +556,6 @@ export interface ProjectLanguagesResponse {
 }
 
 // =============================================================================
-// Rate Limit Types
-// =============================================================================
-
-/**
- * Current rate limit status for an entity/organization.
- *
- * Provides monthly and hourly limit information along with current usage
- * and reset timestamps.
- */
-export interface RateLimitStatus {
-  /** The subscription tier determining rate limits. */
-  tier: RateLimitTier;
-  /** Maximum number of requests allowed per month. */
-  monthly_limit: number;
-  /** Number of requests used this month. */
-  monthly_used: number;
-  /** Number of requests remaining this month. Can be 0 when limit is reached. */
-  monthly_remaining: number;
-  /** Maximum number of requests allowed per hour. */
-  hourly_limit: number;
-  /** Number of requests used this hour. */
-  hourly_used: number;
-  /** Number of requests remaining this hour. Can be 0 when limit is reached. */
-  hourly_remaining: number;
-  /** Timestamps indicating when rate limits reset. */
-  resets_at: {
-    /** ISO 8601 timestamp when the monthly counter resets (e.g., "2024-02-01T00:00:00Z"). */
-    monthly: ISODateString;
-    /** ISO 8601 timestamp when the hourly counter resets (e.g., "2024-01-15T15:00:00Z"). */
-    hourly: ISODateString;
-  };
-}
-
-// =============================================================================
 // Translation Service Types (internal - for calling external service)
 // =============================================================================
 
@@ -652,17 +627,19 @@ export type ProjectResponse = BaseResponse<Project>;
 /** API response containing {@link UserSettings}. */
 export type UserSettingsResponse = BaseResponse<UserSettings>;
 
-/** API response containing {@link RateLimitStatus}. */
-export type RateLimitResponse = BaseResponse<RateLimitStatus>;
-
 /** API response containing {@link DictionaryTranslations}. */
 export type DictionaryResponse = BaseResponse<DictionaryTranslations>;
 
 /** API response containing a {@link DictionarySearchResponse}. */
-export type DictionarySearchApiResponse = BaseResponse<DictionarySearchResponse>;
+export type DictionarySearchApiResponse =
+  BaseResponse<DictionarySearchResponse>;
+
+/** API response containing an array of {@link DictionaryListItem} objects. */
+export type DictionaryListApiResponse = BaseResponse<DictionaryListItem[]>;
 
 /** API response containing a {@link DictionaryLookupResponse}. */
-export type DictionaryLookupApiResponse = BaseResponse<DictionaryLookupResponse>;
+export type DictionaryLookupApiResponse =
+  BaseResponse<DictionaryLookupResponse>;
 
 /** API response containing an {@link AnalyticsResponse}. */
 export type AnalyticsApiResponse = BaseResponse<AnalyticsResponse>;
@@ -674,7 +651,8 @@ export type TranslationApiResponse = BaseResponse<TranslationResponse>;
 export type AvailableLanguagesApiResponse = BaseResponse<AvailableLanguage[]>;
 
 /** API response containing a {@link ProjectLanguagesResponse}. */
-export type ProjectLanguagesApiResponse = BaseResponse<ProjectLanguagesResponse>;
+export type ProjectLanguagesApiResponse =
+  BaseResponse<ProjectLanguagesResponse>;
 
 /** API response containing {@link HealthCheckData}. */
 export type HealthCheckResponse = BaseResponse<HealthCheckData>;
