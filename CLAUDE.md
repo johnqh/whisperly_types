@@ -1,5 +1,10 @@
 # CLAUDE.md - whisperly_types
 
+> **Git policy — never auto-commit or auto-push.** Leave your work in the working tree.
+> Run `git commit`, `git push`, `gh pr create`, or `scripts/push_all.sh` **only when the user
+> explicitly asks in that turn**. Approval for an earlier change does not carry forward, and
+> finishing a task is not permission to commit it.
+
 ## Project Overview
 
 `@sudobility/whisperly_types` is the shared TypeScript types library for the Whisperly localization SaaS platform. It defines all interfaces, request/response types, and helper functions consumed by all other whisperly packages (whisperly_api, whisperly_client, whisperly_lib, whisperly_app).
@@ -119,3 +124,7 @@ All types are in a single file, organized by section:
 - `dist/index.js` — ESM module
 - `dist/index.cjs` — CommonJS module
 - `dist/index.d.ts` — TypeScript declarations
+
+## Git Workflow
+
+- Do not use feature branches for code changes. Always stay on the current branch.
